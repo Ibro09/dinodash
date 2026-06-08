@@ -1276,9 +1276,14 @@ export default function ArenaBattle({
                 <div
                   id="sim-viewport-canvas-wrapper"
                   onClick={triggerDinoJump}
-                  className="w-full bg-black border-2 border-neutral-800 rounded-lg overflow-hidden cursor-pointer relative select-none shadow-inner group font-sans md:h-auto h-[75vh]"
+                  className="w-full bg-black border-2 border-neutral-800 rounded-lg overflow-hidden cursor-pointer relative select-none shadow-inner group font-sans md:h-auto h-[75vh] flex items-center justify-center"
+                  style={{ aspectRatio: "800 / 240" }}
                 >
-                  <canvas ref={canvasRef} className="w-full h-full block" />
+                  <canvas
+                    ref={canvasRef}
+                    className="w-full h-full block"
+                    style={{ display: "block", objectFit: "contain" }}
+                  />
 
                   {/* HTML REPLAY QUESTION MODAL WINDOW */}
                   {gameState === "game_over" && (
