@@ -34,6 +34,7 @@ interface ArenaBattleProps {
   onBattleFinish: (won: boolean, opponentName: string, reward: number) => void;
   unlockedNodes: string[];
   onUnlockNode: (nodeName: string) => Promise<boolean>;
+  earnings: number;
 }
 
 interface Obstacle {
@@ -130,6 +131,11 @@ export default function ArenaBattle({
   const [muted, setMuted] = useState(false);
   const [earningsWon, setEarningsWon] = useState(0);
 
+  // Lives system (3 lives per 24 hours, 8 hour refill)
+  const [availableLives, setAvailableLives] = useState(3);
+  const [nextRefillTime, setNextRefillTime] = useState<number | null>(null);
+  const [livesRefillTimer, setLivesRefillTimer] = useState<string>("");
+
   // Decryption Console overlay state
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [unlockConsole, setUnlockConsole] = useState<string[]>([]);
@@ -172,6 +178,87 @@ export default function ArenaBattle({
     gameRef.current.lives = lives;
     gameRef.current.score = score;
   }, [gameState, lives, score]);
+
+  // Calculate available lives based on timestamps
+  const calculateAvailableLives = () => {
+    const livesData = localStorage.getItem("apex_lives_system");
+    const now = Date.now();
+    const MAX_LIVES = 3;
+    const REFILL_INTERVAL = 8 * 60 * 60 * 1000; // 8 hours in ms
+    const MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours in ms
+
+    let data = livesData
+      ? JSON.parse(livesData)
+      : { usedTimes: [], totalUsedToday: 0 };
+
+    // Clean up old entries (older than 24 hours)
+    const validUsedTimes = data.usedTimes.filter(
+      (timestamp: number) => now - timestamp < MAX_AGE,
+    );
+
+    // Calculate current available lives (never below 0)
+    let currentLives = Math.max(0, MAX_LIVES - validUsedTimes.length);
+
+    // Calculate next refill time
+    let nextRefill: number | null = null;
+    if (validUsedTimes.length > 0) {
+      const oldestUsedTime = Math.min(...validUsedTimes);
+      nextRefill = oldestUsedTime + REFILL_INTERVAL;
+      if (nextRefill < now) {
+        nextRefill = null; // Ready to refill
+      }
+    }
+
+    return { currentLives, nextRefill, usedTimes: validUsedTimes };
+  };
+
+  // Use a life when game ends
+  const useLife = () => {
+    const now = Date.now();
+    const livesData = localStorage.getItem("apex_lives_system");
+    let data = livesData
+      ? JSON.parse(livesData)
+      : { usedTimes: [], totalUsedToday: 0 };
+
+    // Add current time to used times
+    data.usedTimes.push(now);
+
+    // Save to localStorage
+    localStorage.setItem("apex_lives_system", JSON.stringify(data));
+
+    // Recalculate available lives
+    const { currentLives, nextRefill } = calculateAvailableLives();
+    setAvailableLives(currentLives);
+    setNextRefillTime(nextRefill);
+  };
+
+  // Update lives on mount and set up timer for refill countdown
+  useEffect(() => {
+    const updateLivesDisplay = () => {
+      const { currentLives, nextRefill } = calculateAvailableLives();
+      setAvailableLives(currentLives);
+      setNextRefillTime(nextRefill);
+
+      // Calculate time until next refill
+      if (nextRefill) {
+        const timeUntilRefill = nextRefill - Date.now();
+        if (timeUntilRefill > 0) {
+          const hours = Math.floor(timeUntilRefill / (60 * 60 * 1000));
+          const minutes = Math.floor(
+            (timeUntilRefill % (60 * 60 * 1000)) / (60 * 1000),
+          );
+          const seconds = Math.floor((timeUntilRefill % (60 * 1000)) / 1000);
+          setLivesRefillTimer(`${hours}h ${minutes}m ${seconds}s`);
+        } else {
+          setLivesRefillTimer("");
+        }
+      }
+    };
+
+    updateLivesDisplay();
+    const timer = setInterval(updateLivesDisplay, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Audio synthesizer helper inside browser
   const playSynthesizedTone = (
@@ -296,6 +383,12 @@ export default function ArenaBattle({
   };
 
   const handleResetSimulation = () => {
+    // Check if lives are available
+    if (availableLives <= 0) {
+      setUnlockError("No lives available. Wait for refill.");
+      return;
+    }
+
     const gr = gameRef.current;
 
     // Reset state values
@@ -615,6 +708,9 @@ export default function ArenaBattle({
               // Instant failure on touching one hurdle
               gr.lives = 0;
               setLives(0);
+
+              // Use a life from the lives system
+              useLife();
 
               // Game over simulation failed
               setGameState("game_over");
@@ -1009,6 +1105,18 @@ export default function ArenaBattle({
                 </div>
               )}
 
+              {availableLives <= 0 && (
+                <div className="p-4 bg-yellow-950/40 border border-yellow-700/50 text-yellow-200 text-xs font-mono rounded flex flex-col gap-2 select-none">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-yellow-500 shrink-0" />
+                    <span className="font-bold uppercase">
+                      NO LIVES AVAILABLE
+                    </span>
+                  </div>
+                  <span>Next life refill: {livesRefillTimer || "Ready!"}</span>
+                </div>
+              )}
+
               {isUnlocking ? (
                 /* TRANSACT CONTRACT INTERFACE LOGS */
                 <div className="border border-emerald-500/30 bg-black/95 p-6 md:p-8 rounded-lg space-y-6 font-mono text-xs">
@@ -1057,11 +1165,28 @@ export default function ArenaBattle({
                         attack. Difficulty dictates hurdle speed.
                       </span>
                     </div>
-                    <div className="hidden sm:flex items-center gap-1 bg-[#1a1a1a] border border-neutral-800 px-3 py-1 font-mono text-[10px] text-zinc-300">
-                      <span>HIGH SCORE ledger:</span>
-                      <span className="text-white font-black">
-                        {String(highScore).padStart(5, "0")}
-                      </span>
+                    <div className="hidden sm:flex flex-col items-end gap-2">
+                      <div className="flex items-center gap-1 bg-[#1a1a1a] border border-neutral-800 px-3 py-1 font-mono text-[10px] text-zinc-300">
+                        <span>HIGH SCORE ledger:</span>
+                        <span className="text-white font-black">
+                          {String(highScore).padStart(5, "0")}
+                        </span>
+                      </div>
+                      <div
+                        className={`flex items-center gap-1 border px-3 py-1 font-mono text-[10px] rounded ${
+                          availableLives > 0
+                            ? "bg-green-950/30 border-green-700 text-green-300"
+                            : "bg-red-950/30 border-red-700 text-red-300"
+                        }`}
+                      >
+                        <span>LIVES:</span>
+                        <span className="font-black">{availableLives}/3</span>
+                        {nextRefillTime && (
+                          <span className="text-[9px]">
+                            ({livesRefillTimer})
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -1075,6 +1200,12 @@ export default function ArenaBattle({
                           key={opp.name}
                           id={`opponent-choice-${opp.name}`}
                           onClick={() => {
+                            if (availableLives <= 0) {
+                              setUnlockError(
+                                "No lives available. Wait for refill.",
+                              );
+                              return;
+                            }
                             setSelectedOpponent(opp);
                             setUnlockError(null);
                             // If unlocked, start game immediately on tap
@@ -1083,13 +1214,16 @@ export default function ArenaBattle({
                             }
                           }}
                           className={`p-5 rounded border text-left cursor-pointer transition-all relative flex flex-col justify-between gap-4 h-48 group ${
+                            availableLives <= 0 &&
                             selectedOpponent.name === opp.name
-                              ? isLocked
-                                ? "border-red-500 bg-red-950/10"
-                                : "border-white bg-[#191919] shadow-[0_0_12px_rgba(255,255,255,0.05)]"
-                              : isLocked
-                                ? "border-red-950/30 bg-[#060000] hover:border-red-900/50"
-                                : "border-neutral-850 bg-[#070707] hover:border-neutral-700"
+                              ? "border-red-500/50 bg-red-950/5 opacity-50"
+                              : selectedOpponent.name === opp.name
+                                ? isLocked
+                                  ? "border-red-500 bg-red-950/10"
+                                  : "border-white bg-[#191919] shadow-[0_0_12px_rgba(255,255,255,0.05)]"
+                                : isLocked
+                                  ? "border-red-950/30 bg-[#060000] hover:border-red-900/50"
+                                  : "border-neutral-850 bg-[#070707] hover:border-neutral-700"
                           }`}
                         >
                           <div>
@@ -1193,24 +1327,31 @@ export default function ArenaBattle({
                   {/* Hearts block */}
                   <div className="text-left space-y-0.5">
                     <span className="font-mono text-[8px] text-zinc-500 uppercase block tracking-wider font-bold">
-                      CORE INTEGRITY
+                      LIVES REMAINING
                     </span>
                     <div
                       className="flex gap-1 items-center"
                       id="heart-lives-display"
                     >
-                      <Heart
-                        id="heart-icon-single"
-                        className={`w-4 h-4 transition-all ${
-                          lives > 0
-                            ? "text-red-500 fill-red-500 drop-shadow-[0_0_4px_rgba(239,68,68,0.5)]"
-                            : "text-neutral-800 fill-transparent stroke-neutral-800 animate-pulse"
-                        }`}
-                      />
+                      {[...Array(3)].map((_, i) => (
+                        <Heart
+                          key={i}
+                          className={`w-4 h-4 transition-all ${
+                            i < availableLives
+                              ? "text-red-500 fill-red-500 drop-shadow-[0_0_4px_rgba(239,68,68,0.5)]"
+                              : "text-neutral-800 fill-transparent stroke-neutral-800"
+                          }`}
+                        />
+                      ))}
                       <span className="font-mono text-[10px] text-zinc-300 font-bold ml-1">
-                        {lives > 0 ? "100% HEALTH" : "0% DECAYED"}
+                        {availableLives}/3
                       </span>
                     </div>
+                    {nextRefillTime && (
+                      <span className="font-mono text-[8px] text-yellow-600 uppercase tracking-wider mt-1">
+                        Refill: {livesRefillTimer}
+                      </span>
+                    )}
                   </div>
 
                   {/* Simulated ledger balance */}

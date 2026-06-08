@@ -68,7 +68,7 @@ export default function Hero({
             ENTER THE ARENA
           </button>
 
-          <button
+          {/* <button
             id="hero-btn-view-leaderboard"
             onClick={() => {
               setActiveTab("leaderboard");
@@ -82,7 +82,7 @@ export default function Hero({
             className="flex-1 sm:flex-none sm:min-w-[200px] border border-white text-white bg-black/40 backdrop-blur-sm font-mono text-xs px-8 py-4 font-bold tracking-widest hover:bg-white/10 active:scale-95 transition-all outline-none uppercase"
           >
             VIEW LEADERBOARD
-          </button>
+          </button> */}
         </div>
       </div>
 
