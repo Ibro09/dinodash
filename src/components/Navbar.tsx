@@ -33,7 +33,7 @@ export default function Navbar({
 
   return (
     <>
-      <header className="fixed top-0 left-0 w-full h-20 z-50 flex justify-between items-center px-4 sm:px-6 md:px-16 bg-[#131313]/90 backdrop-blur-md border-b border-[#444748] transition-all">
+      <header className="fixed top-0 left-0 w-full h-20 z-[109] flex justify-between items-center px-4 sm:px-6 md:px-16 bg-[#131313]/90 backdrop-blur-md border-b border-[#444748] transition-all z-9999">
         {/* Logo left */}
         <div
           id="nav-logo"
@@ -133,7 +133,10 @@ export default function Navbar({
           ) : (
             <button
               id="connect-wallet-btn"
-              onClick={onConnectClick}
+              onClick={() => {
+                console.log("[NAVBAR] CONNECT WALLET clicked");
+                onConnectClick();
+              }}
               className="bg-white text-black font-mono text-xs px-6 py-3 font-bold hover:bg-neutral-200 active:scale-95 transition-all outline-none"
             >
               CONNECT WALLET

@@ -316,7 +316,7 @@ export default function Leaderboard({
         id="elite-operators-view"
         className="relative py-12 px-4 sm:px-6 md:px-16 max-w-7xl mx-auto space-y-12"
       >
-        <div className="fixed left-0 right-0 bottom-0 top-16 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center">
+        <div className="fixed left-0 right-0 bottom-0 top-16 z-[99] bg-black/80 backdrop-blur-sm flex items-center justify-center">
           <h1 className="text-white text-5xl font-bold uppercase tracking-widest">
             Coming Soon
           </h1>

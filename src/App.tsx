@@ -51,6 +51,11 @@ export default function App() {
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
   const [leaderboardUsers, setLeaderboardUsers] = useState<Operator[]>([]);
 
+  // Debug: Log when modal state changes
+  useEffect(() => {
+    console.log("[APP] isConnectModalOpen changed to:", isConnectModalOpen);
+  }, [isConnectModalOpen]);
+
   // Synchronize localStorage
   useEffect(() => {
     localStorage.setItem("APEX_WALLET_CONNECTED", String(walletConnected));

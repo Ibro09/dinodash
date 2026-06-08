@@ -1077,6 +1077,10 @@ export default function ArenaBattle({
                           onClick={() => {
                             setSelectedOpponent(opp);
                             setUnlockError(null);
+                            // If unlocked, start game immediately on tap
+                            if (!isLocked) {
+                              setGameState("idle");
+                            }
                           }}
                           className={`p-5 rounded border text-left cursor-pointer transition-all relative flex flex-col justify-between gap-4 h-48 group ${
                             selectedOpponent.name === opp.name
@@ -1163,16 +1167,7 @@ export default function ArenaBattle({
                         <Key className="w-4 h-4 text-white" />
                         <span>DECRYPT COMMISSARY SYSTEM NODE ($10 USD)</span>
                       </button>
-                    ) : (
-                      <button
-                        id="launch-node-sim-btn"
-                        onClick={() => setGameState("idle")}
-                        className="px-10 py-4.5 bg-white text-black font-mono text-xs font-black uppercase tracking-wider hover:bg-neutral-200 transition-colors shadow-[0_0_15px_rgba(255,255,255,0.1)] cursor-pointer inline-flex items-center gap-2"
-                      >
-                        <Play className="w-3.5 h-3.5 fill-current" />
-                        <span>LOAD SIMULATION PROTOCOL</span>
-                      </button>
-                    )}
+                    ) : null}
                   </div>
                 </>
               )}
@@ -1281,9 +1276,9 @@ export default function ArenaBattle({
                 <div
                   id="sim-viewport-canvas-wrapper"
                   onClick={triggerDinoJump}
-                  className="w-full bg-black border-2 border-neutral-800 rounded-lg overflow-hidden cursor-pointer relative select-none shadow-inner group font-sans"
+                  className="w-full bg-black border-2 border-neutral-800 rounded-lg overflow-hidden cursor-pointer relative select-none shadow-inner group font-sans md:h-auto h-[75vh]"
                 >
-                  <canvas ref={canvasRef} className="w-full h-auto block" />
+                  <canvas ref={canvasRef} className="w-full h-full block" />
 
                   {/* HTML REPLAY QUESTION MODAL WINDOW */}
                   {gameState === "game_over" && (
@@ -1347,7 +1342,7 @@ export default function ArenaBattle({
                 id="hud-operational-keys"
                 className="border border-neutral-850 bg-black p-3.5 flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6 rounded-lg"
               >
-                {/* [SPACE] JUMP */}
+                {/* [SPACE] JUMP - Always show */}
                 <button
                   id="shortcut-btn-jump"
                   onClick={triggerDinoJump}
@@ -1359,11 +1354,11 @@ export default function ArenaBattle({
                   <span>JUMP / START</span>
                 </button>
 
-                {/* [R] RESET */}
+                {/* [R] RESET - Hidden on mobile */}
                 <button
                   id="shortcut-btn-reset"
                   onClick={handleResetSimulation}
-                  className="px-5 py-2 hover:bg-neutral-900 border border-neutral-800 hover:border-neutral-500 rounded text-neutral-300 hover:text-white transition-all font-mono text-[10px] tracking-wider uppercase font-bold inline-flex items-center gap-2 cursor-pointer w-full sm:w-auto justify-center"
+                  className="hidden sm:inline-flex px-5 py-2 hover:bg-neutral-900 border border-neutral-800 hover:border-neutral-500 rounded text-neutral-300 hover:text-white transition-all font-mono text-[10px] tracking-wider uppercase font-bold items-center gap-2 cursor-pointer w-full sm:w-auto justify-center"
                 >
                   <span className="bg-[#1f1f1f] text-white px-2 py-0.5 rounded font-black border border-neutral-700">
                     [R]
@@ -1371,11 +1366,11 @@ export default function ArenaBattle({
                   <span>RESET SIMULATION</span>
                 </button>
 
-                {/* [ESC] TERMINATE */}
+                {/* [ESC] TERMINATE - Hidden on mobile */}
                 <button
                   id="shortcut-btn-terminate"
                   onClick={handleEnterSetup}
-                  className="px-5 py-2 hover:bg-neutral-900 border border-neutral-800 hover:border-neutral-500 rounded text-neutral-300 hover:text-white transition-all font-mono text-[10px] tracking-wider uppercase font-bold inline-flex items-center gap-2 cursor-pointer w-full sm:w-auto justify-center"
+                  className="hidden sm:inline-flex px-5 py-2 hover:bg-neutral-900 border border-neutral-800 hover:border-neutral-500 rounded text-neutral-300 hover:text-white transition-all font-mono text-[10px] tracking-wider uppercase font-bold items-center gap-2 cursor-pointer w-full sm:w-auto justify-center"
                 >
                   <span className="bg-[#1f1f1f] text-white px-2 py-0.5 rounded font-black border border-neutral-700">
                     [ESC]

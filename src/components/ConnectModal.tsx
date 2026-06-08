@@ -1,17 +1,37 @@
 import React, { useState, useEffect } from "react";
-import { X, Shield, Cpu, Key, Check, Wifi, Terminal, AlertTriangle } from "lucide-react";
+import {
+  X,
+  Shield,
+  Cpu,
+  Key,
+  Check,
+  Wifi,
+  Terminal,
+  AlertTriangle,
+} from "lucide-react";
 import { Keypair } from "@solana/web3.js";
 
 interface ConnectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConnect: (name: string, address: string, unlockedNodes: string[], earnings: number) => void;
+  onConnect: (
+    name: string,
+    address: string,
+    unlockedNodes: string[],
+    earnings: number,
+  ) => void;
 }
 
-export default function ConnectModal({ isOpen, onClose, onConnect }: ConnectModalProps) {
+export default function ConnectModal({
+  isOpen,
+  onClose,
+  onConnect,
+}: ConnectModalProps) {
   // Navigation states: 'select_wallet' | 'lookup' | 'register' | 'welcome'
-  const [step, setStep] = useState<'select_wallet' | 'lookup' | 'register' | 'welcome'>('select_wallet');
-  
+  const [step, setStep] = useState<
+    "select_wallet" | "lookup" | "register" | "welcome"
+  >("select_wallet");
+
   const [operatorAddress, setOperatorAddress] = useState("");
   const [operatorName, setOperatorName] = useState("");
   const [selectedProvider, setSelectedProvider] = useState("PHANTOM");
@@ -26,8 +46,12 @@ export default function ConnectModal({ isOpen, onClose, onConnect }: ConnectModa
       setOperatorAddress(kp.publicKey.toBase58());
       setErrorMsg(null);
     } catch (err) {
-      const base58Chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-      const addr = Array.from({length: 44}, () => base58Chars[Math.floor(Math.random() * base58Chars.length)]).join("");
+      const base58Chars =
+        "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+      const addr = Array.from(
+        { length: 44 },
+        () => base58Chars[Math.floor(Math.random() * base58Chars.length)],
+      ).join("");
       setOperatorAddress(addr);
       setErrorMsg(null);
     }
@@ -35,19 +59,23 @@ export default function ConnectModal({ isOpen, onClose, onConnect }: ConnectModa
 
   useEffect(() => {
     if (isOpen) {
-      setStep('select_wallet');
+      console.log("[CONNECT-MODAL] Opened");
+      setStep("select_wallet");
       setOperatorAddress("");
       setOperatorName("");
       setErrorMsg(null);
       setFoundProfile(null);
       setBootSequence([
         "Protocol terminal initialized.",
-        "Establishing handshakes..."
+        "Establishing handshakes...",
       ]);
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    console.log("[CONNECT-MODAL] isOpen is false, returning null");
+    return null;
+  }
 
   // Handles checking whether real Solana extensions are available, or falls back, then queries database
   const handleProceedToLookup = async () => {
@@ -55,19 +83,33 @@ export default function ConnectModal({ isOpen, onClose, onConnect }: ConnectModa
 
     // Phantom/Solflare connection flow
     if (selectedProvider === "PHANTOM" || selectedProvider === "SOLFLARE") {
-      setBootSequence(prev => [...prev, `[SOL] Probing window.${selectedProvider.toLowerCase()} extensions...`]);
-      
-      const provider = selectedProvider === "PHANTOM" ? (window as any).solana : (window as any).solflare;
+      setBootSequence((prev) => [
+        ...prev,
+        `[SOL] Probing window.${selectedProvider.toLowerCase()} extensions...`,
+      ]);
+
+      const provider =
+        selectedProvider === "PHANTOM"
+          ? (window as any).solana
+          : (window as any).solflare;
 
       if (provider) {
         try {
-          setBootSequence(prev => [...prev, "[SOL] Requesting signature/connection handshake..."]);
+          setBootSequence((prev) => [
+            ...prev,
+            "[SOL] Requesting signature/connection handshake...",
+          ]);
           const resp = await provider.connect();
-          const pubKey = resp.publicKey ? resp.publicKey.toString() : provider.publicKey?.toString();
+          const pubKey = resp.publicKey
+            ? resp.publicKey.toString()
+            : provider.publicKey?.toString();
           if (pubKey) {
             targetAddress = pubKey;
             setOperatorAddress(pubKey);
-            setBootSequence(prev => [...prev, `[SOL] Connected successfully via window.${selectedProvider.toLowerCase()}. Key: ${pubKey}`]);
+            setBootSequence((prev) => [
+              ...prev,
+              `[SOL] Connected successfully via window.${selectedProvider.toLowerCase()}. Key: ${pubKey}`,
+            ]);
           } else {
             throw new Error("No public key found from provider response.");
           }
@@ -78,17 +120,17 @@ export default function ConnectModal({ isOpen, onClose, onConnect }: ConnectModa
         }
       } else {
         // Fallback for iframe sandbox simulation
-        setBootSequence(prev => [
-          ...prev, 
-          `[WARN] window.${selectedProvider.toLowerCase()} not detected in sandbox iframe.`, 
-          "[INFO] Activating secure Solana Devnet Sandbox Tunnel..."
+        setBootSequence((prev) => [
+          ...prev,
+          `[WARN] window.${selectedProvider.toLowerCase()} not detected in sandbox iframe.`,
+          "[INFO] Activating secure Solana Devnet Sandbox Tunnel...",
         ]);
         if (!targetAddress) {
           // Generate simulated stable Solana keys
           const simulatedKeys = [
             "9rXWyS4bN8F4bW9X1E9Y5PruXfE1T6Zg3Y49m5oG6jH62",
             "DyV8EunK1rshgRqy9xM7A1eREx8fC5xP7K1Qf6Rpy9hZ",
-            "7aNbeRvA9BswD18ZxpS7yD1C69REPfC66fQwRpx2qHw9"
+            "7aNbeRvA9BswD18ZxpS7yD1C69REPfC66fQwRpx2qHw9",
           ];
           const index = selectedProvider === "PHANTOM" ? 1 : 2;
           targetAddress = simulatedKeys[index];
@@ -97,16 +139,22 @@ export default function ConnectModal({ isOpen, onClose, onConnect }: ConnectModa
       }
     } else {
       // APEX VAULT Custom Manual Address
-      if (!targetAddress || targetAddress.length < 32 || targetAddress.length > 44) {
-        setErrorMsg("Please enter a valid Solana Base58 public key (32 to 44 characters in length).");
+      if (
+        !targetAddress ||
+        targetAddress.length < 32 ||
+        targetAddress.length > 44
+      ) {
+        setErrorMsg(
+          "Please enter a valid Solana Base58 public key (32 to 44 characters in length).",
+        );
         return;
       }
     }
 
-    setStep('lookup');
-    setBootSequence(prev => [
+    setStep("lookup");
+    setBootSequence((prev) => [
       ...prev,
-      `[DATABASE] Querying secure ledger for Solana node address: ${targetAddress}...`
+      `[DATABASE] Querying secure ledger for Solana node address: ${targetAddress}...`,
     ]);
 
     // Query database proxy `/api/operator/:address`
@@ -116,34 +164,49 @@ export default function ConnectModal({ isOpen, onClose, onConnect }: ConnectModa
         const data = await res.json();
         // Address has been saved before!
         setFoundProfile(data);
-        setBootSequence(prev => [
+        setBootSequence((prev) => [
           ...prev,
           `[FOUND] Address registered in database!`,
           `[LOG] Callsign match: ${data.name}`,
           `[LOG] Core earnings logged: $${parseFloat(data.earnings).toFixed(2)}`,
-          `[SECURITY] Solana authority token created.`
+          `[SECURITY] Solana authority token created.`,
         ]);
-        setStep('welcome');
+        setStep("welcome");
         setTimeout(() => {
-          onConnect(data.name, data.address, data.unlockedNodes || [], parseFloat(data.earnings) || 0);
+          onConnect(
+            data.name,
+            data.address,
+            data.unlockedNodes || [],
+            parseFloat(data.earnings) || 0,
+          );
           onClose();
         }, 1800);
       } else {
         // Address has NOT been saved before!
-        setBootSequence(prev => [
+        setBootSequence((prev) => [
           ...prev,
           `[DATABASE] Address not found in secure ledger.`,
-          `[SECURE] Prompting for first-time operator profiling entry...`
+          `[SECURE] Prompting for first-time operator profiling entry...`,
         ]);
         // Set standard random hacker pseudonym to aid them
-        const pseudoNames = ["NEO_REPLICANT", "ZERO_SENTRY", "HYPER_GHOST", "CYPHER_COBALT", "SPECTRE_BETA", "KRONOS_AGENT", "VOID_STALKER"];
-        setOperatorName(pseudoNames[Math.floor(Math.random() * pseudoNames.length)]);
-        setStep('register');
+        const pseudoNames = [
+          "NEO_REPLICANT",
+          "ZERO_SENTRY",
+          "HYPER_GHOST",
+          "CYPHER_COBALT",
+          "SPECTRE_BETA",
+          "KRONOS_AGENT",
+          "VOID_STALKER",
+        ];
+        setOperatorName(
+          pseudoNames[Math.floor(Math.random() * pseudoNames.length)],
+        );
+        setStep("register");
       }
     } catch (err: any) {
       console.error(err);
       setErrorMsg("Mainframe connection error. Please try again.");
-      setStep('select_wallet');
+      setStep("select_wallet");
     }
   };
 
@@ -156,32 +219,40 @@ export default function ConnectModal({ isOpen, onClose, onConnect }: ConnectModa
       return;
     }
 
-    setBootSequence(prev => [
+    setBootSequence((prev) => [
       ...prev,
-      `[REGISTRY] Registering operator callsign "${cleanName}" with Solana address ${operatorAddress}...`
+      `[REGISTRY] Registering operator callsign "${cleanName}" with Solana address ${operatorAddress}...`,
     ]);
 
     try {
       const res = await fetch("/api/operator", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address: operatorAddress, name: cleanName })
+        body: JSON.stringify({ address: operatorAddress, name: cleanName }),
       });
 
       if (res.ok) {
         const data = await res.json();
-        setBootSequence(prev => [...prev, `[REGISTRY] Saved in database. Node activated!`]);
+        setBootSequence((prev) => [
+          ...prev,
+          `[REGISTRY] Saved in database. Node activated!`,
+        ]);
         setFoundProfile(data);
-        setStep('welcome');
+        setStep("welcome");
 
         setTimeout(() => {
-          onConnect(data.name, data.address, data.unlockedNodes || [], parseFloat(data.earnings) || 0);
+          onConnect(
+            data.name,
+            data.address,
+            data.unlockedNodes || [],
+            parseFloat(data.earnings) || 0,
+          );
           onClose();
         }, 1500);
       } else {
         const errData = await res.json();
         setErrorMsg(errData.error || "Failed to persist database identity.");
-        setStep('register');
+        setStep("register");
       }
     } catch (err) {
       console.error(err);
@@ -190,21 +261,23 @@ export default function ConnectModal({ isOpen, onClose, onConnect }: ConnectModa
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md"
       id="connect-wallet-dialog"
     >
       <div className="relative w-full max-w-lg bg-[#0a0a0a] border border-white/20 p-6 md:p-8 overflow-hidden rounded-sm shadow-2xl">
         {/* Glow behind */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-32 bg-white/5 blur-3xl pointer-events-none rounded-full" />
-        
+
         {/* Header line */}
         <div className="flex justify-between items-center pb-4 border-b border-zinc-800 mb-6">
           <div className="flex items-center gap-2">
             <Cpu className="w-4 h-4 text-emerald-500 animate-pulse" />
-            <span className="font-mono text-xs tracking-widest uppercase text-zinc-300 font-bold">SECURE LOGICAL PROTOCOL</span>
+            <span className="font-mono text-xs tracking-widest uppercase text-zinc-300 font-bold">
+              SECURE LOGICAL PROTOCOL
+            </span>
           </div>
-          <button 
+          <button
             id="close-connect-modal"
             onClick={onClose}
             className="text-zinc-500 hover:text-white transition-colors"
@@ -222,10 +295,12 @@ export default function ConnectModal({ isOpen, onClose, onConnect }: ConnectModa
         )}
 
         {/* STEP 1: Select Crypto Wallet & Input Address */}
-        {step === 'select_wallet' && (
+        {step === "select_wallet" && (
           <div className="space-y-6">
             <div className="space-y-2">
-              <label className="font-mono text-xs text-zinc-400 uppercase tracking-widest">SELECT DEVNET INTERFACE</label>
+              <label className="font-mono text-xs text-zinc-400 uppercase tracking-widest">
+                SELECT DEVNET INTERFACE
+              </label>
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
@@ -241,7 +316,9 @@ export default function ConnectModal({ isOpen, onClose, onConnect }: ConnectModa
                   }`}
                 >
                   <span className="font-bold">PHANTOM</span>
-                  <span className="text-[8px] text-zinc-500 uppercase mt-0.5">Solana Ext</span>
+                  <span className="text-[8px] text-zinc-500 uppercase mt-0.5">
+                    Solana Ext
+                  </span>
                 </button>
 
                 <button
@@ -258,7 +335,9 @@ export default function ConnectModal({ isOpen, onClose, onConnect }: ConnectModa
                   }`}
                 >
                   <span className="font-bold">SOLFLARE</span>
-                  <span className="text-[8px] text-zinc-500 uppercase mt-0.5">Solana Ext</span>
+                  <span className="text-[8px] text-zinc-500 uppercase mt-0.5">
+                    Solana Ext
+                  </span>
                 </button>
 
                 <button
@@ -275,7 +354,9 @@ export default function ConnectModal({ isOpen, onClose, onConnect }: ConnectModa
                   }`}
                 >
                   <span className="font-bold">APEX SOL DEV</span>
-                  <span className="text-[8px] text-zinc-500 uppercase mt-0.5">Simulated</span>
+                  <span className="text-[8px] text-zinc-500 uppercase mt-0.5">
+                    Simulated
+                  </span>
                 </button>
               </div>
             </div>
@@ -284,7 +365,9 @@ export default function ConnectModal({ isOpen, onClose, onConnect }: ConnectModa
             {selectedProvider === "APEX_SECURE" ? (
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <label className="font-mono text-xs text-zinc-400 uppercase tracking-widest">DEVNET SOL KEY ADDRESS</label>
+                  <label className="font-mono text-xs text-zinc-400 uppercase tracking-widest">
+                    DEVNET SOL KEY ADDRESS
+                  </label>
                   <button
                     type="button"
                     onClick={generateRandomAddress}
@@ -307,9 +390,13 @@ export default function ConnectModal({ isOpen, onClose, onConnect }: ConnectModa
               </div>
             ) : (
               <div className="space-y-1 bg-zinc-950/80 p-3 border border-zinc-900 rounded-sm">
-                <span className="font-mono text-[10px] text-zinc-500 uppercase tracking-wider block font-bold">SOLANA HANDSHAKE STRATEGY</span>
+                <span className="font-mono text-[10px] text-zinc-500 uppercase tracking-wider block font-bold">
+                  SOLANA HANDSHAKE STRATEGY
+                </span>
                 <p className="font-mono text-[11px] text-zinc-400 leading-relaxed pt-1">
-                  Connecting triggers a secure local account fetch. If no Web3 provider is detected in this sandbox iframe, a dynamic Devnet tunnel key will automatically authorize.
+                  Connecting triggers a secure local account fetch. If no Web3
+                  provider is detected in this sandbox iframe, a dynamic Devnet
+                  tunnel key will automatically authorize.
                 </p>
               </div>
             )}
@@ -318,7 +405,9 @@ export default function ConnectModal({ isOpen, onClose, onConnect }: ConnectModa
             <div className="p-3 bg-zinc-950 border border-zinc-900 flex gap-3 text-xs leading-relaxed text-zinc-400 rounded-sm">
               <Key className="w-4 h-4 text-zinc-400 shrink-0 mt-0.5" />
               <p className="font-sans">
-                Authority locks register instantly. Profiles, subscription permissions, and high scores persist securely in our cloud-backed database.
+                Authority locks register instantly. Profiles, subscription
+                permissions, and high scores persist securely in our
+                cloud-backed database.
               </p>
             </div>
 
@@ -333,18 +422,22 @@ export default function ConnectModal({ isOpen, onClose, onConnect }: ConnectModa
         )}
 
         {/* STEP 2: Database lookup query loader */}
-        {step === 'lookup' && (
+        {step === "lookup" && (
           <div className="space-y-6 py-6 font-mono text-xs">
             <div className="flex items-center gap-3 justify-center">
               <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
-              <span className="text-white font-bold uppercase tracking-widest text">INTERROGATING SECURITY DATABASE...</span>
+              <span className="text-white font-bold uppercase tracking-widest text">
+                INTERROGATING SECURITY DATABASE...
+              </span>
             </div>
-            
+
             <div className="bg-[#0c0c0c] p-4 border border-zinc-900 max-h-52 overflow-y-auto space-y-1.5 text-zinc-400 rounded-sm">
               {bootSequence.map((log, index) => (
                 <div key={index} className="flex gap-2">
                   <span className="text-emerald-500 font-bold">&gt;&gt;</span>
-                  <span className="font-mono text-[11px] select-none text-zinc-300">{log}</span>
+                  <span className="font-mono text-[11px] select-none text-zinc-300">
+                    {log}
+                  </span>
                 </div>
               ))}
             </div>
@@ -352,24 +445,42 @@ export default function ConnectModal({ isOpen, onClose, onConnect }: ConnectModa
         )}
 
         {/* STEP 3: Address not found -> Ask for Callsign Name */}
-        {step === 'register' && (
+        {step === "register" && (
           <form onSubmit={handleRegisterAndConnect} className="space-y-6">
             <div className="space-y-2">
-              <label className="font-mono text-xs text-zinc-500 uppercase tracking-widest block font-bold">DEVNET ACCOUNT INITIALIZED</label>
+              <label className="font-mono text-xs text-zinc-500 uppercase tracking-widest block font-bold">
+                DEVNET ACCOUNT INITIALIZED
+              </label>
               <div className="bg-zinc-950 p-3 border border-zinc-900 rounded-sm select-none">
-                <span className="text-[10px] text-zinc-500 uppercase font-mono block">SECURE NODE ID</span>
-                <span className="font-mono text-xs text-emerald-400 uppercase select-all font-bold block truncate">{operatorAddress}</span>
+                <span className="text-[10px] text-zinc-500 uppercase font-mono block">
+                  SECURE NODE ID
+                </span>
+                <span className="font-mono text-xs text-emerald-400 uppercase select-all font-bold block truncate">
+                  {operatorAddress}
+                </span>
               </div>
             </div>
 
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="font-mono text-xs text-zinc-400 uppercase tracking-widest font-bold">CHOOSE NICKNAME / CALLSIGN</label>
+                <label className="font-mono text-xs text-zinc-400 uppercase tracking-widest font-bold">
+                  CHOOSE NICKNAME / CALLSIGN
+                </label>
                 <button
                   type="button"
                   onClick={() => {
-                    const names = ["NEO_REPLICANT", "ZERO_SENTRY", "HYPER_GHOST", "CYPHER_COBALT", "SPECTRE_BETA", "KRONOS_AGENT", "VOID_STALKER"];
-                    setOperatorName(names[Math.floor(Math.random() * names.length)]);
+                    const names = [
+                      "NEO_REPLICANT",
+                      "ZERO_SENTRY",
+                      "HYPER_GHOST",
+                      "CYPHER_COBALT",
+                      "SPECTRE_BETA",
+                      "KRONOS_AGENT",
+                      "VOID_STALKER",
+                    ];
+                    setOperatorName(
+                      names[Math.floor(Math.random() * names.length)],
+                    );
                   }}
                   className="font-mono text-[10px] text-emerald-400 underline hover:no-underline"
                 >
@@ -381,14 +492,20 @@ export default function ConnectModal({ isOpen, onClose, onConnect }: ConnectModa
                 required
                 maxLength={24}
                 value={operatorName}
-                onChange={(e) => setOperatorName(e.target.value.toUpperCase().replace(/\s+/g, "_"))}
+                onChange={(e) =>
+                  setOperatorName(
+                    e.target.value.toUpperCase().replace(/\s+/g, "_"),
+                  )
+                }
                 placeholder="PROX_HACKER_77"
                 className="w-full bg-zinc-950 border border-zinc-800 text-white font-mono text-xs uppercase px-4 py-3 focus:border-zinc-500 focus:outline-none transition-all rounded-sm tracking-widest"
               />
             </div>
 
             <p className="font-mono text-[11px] text-zinc-500 leading-relaxed select-none">
-              This pseudonymous handler represents your identity on the global apex leadership board. You will be persistent in the ledger matching your cryptographic address.
+              This pseudonymous handler represents your identity on the global
+              apex leadership board. You will be persistent in the ledger
+              matching your cryptographic address.
             </p>
 
             <button
@@ -401,31 +518,46 @@ export default function ConnectModal({ isOpen, onClose, onConnect }: ConnectModa
         )}
 
         {/* STEP 4: Welcome established message */}
-        {step === 'welcome' && foundProfile && (
+        {step === "welcome" && foundProfile && (
           <div className="space-y-6 text-center py-6 font-mono">
             <div className="w-12 h-12 bg-emerald-950/35 border border-emerald-500/40 rounded-full flex items-center justify-center mx-auto mb-2 animate-bounce">
               <Wifi className="w-6 h-6 text-emerald-400" />
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-white text-lg font-black uppercase tracking-widest">CONNECTION INJECTED</h3>
+              <h3 className="text-white text-lg font-black uppercase tracking-widest">
+                CONNECTION INJECTED
+              </h3>
               <p className="text-[11px] text-zinc-400 max-w-sm mx-auto leading-relaxed">
-                Vault validated. Synced with database. Welcome back, active operator.
+                Vault validated. Synced with database. Welcome back, active
+                operator.
               </p>
             </div>
 
             <div className="bg-zinc-950/80 p-4 border border-zinc-900 inline-block text-left mx-auto rounded-sm space-y-1.5 min-w-[280px]">
               <div className="flex justify-between gap-10">
-                <span className="text-[10px] text-zinc-500 font-bold uppercase">CALLSIGN:</span>
-                <span className="text-xs text-white font-bold">{foundProfile.name}</span>
+                <span className="text-[10px] text-zinc-500 font-bold uppercase">
+                  CALLSIGN:
+                </span>
+                <span className="text-xs text-white font-bold">
+                  {foundProfile.name}
+                </span>
               </div>
               <div className="flex justify-between gap-10 border-t border-zinc-900 pt-1.5">
-                <span className="text-[10px] text-zinc-500 font-bold uppercase">SCORE REGISTERED:</span>
-                <span className="text-xs text-emerald-400 font-bold">{foundProfile.highScore || 0} pts</span>
+                <span className="text-[10px] text-zinc-500 font-bold uppercase">
+                  SCORE REGISTERED:
+                </span>
+                <span className="text-xs text-emerald-400 font-bold">
+                  {foundProfile.highScore || 0} pts
+                </span>
               </div>
               <div className="flex justify-between gap-10 border-t border-zinc-900 pt-1.5">
-                <span className="text-[10px] text-zinc-500 font-bold uppercase">EXTRACTED BAL:</span>
-                <span className="text-xs text-white font-bold">${parseFloat(foundProfile.earnings || 0).toFixed(2)} USD</span>
+                <span className="text-[10px] text-zinc-500 font-bold uppercase">
+                  EXTRACTED BAL:
+                </span>
+                <span className="text-xs text-white font-bold">
+                  ${parseFloat(foundProfile.earnings || 0).toFixed(2)} USD
+                </span>
               </div>
             </div>
           </div>

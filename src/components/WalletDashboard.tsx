@@ -203,7 +203,10 @@ export default function WalletDashboard({
             </p>
             <button
               id="wallet-connect-inline-btn"
-              onClick={onConnectClick}
+              onClick={() => {
+                console.log("[WALLET-DASHBOARD] CONNECT WALLET clicked");
+                onConnectClick();
+              }}
               className="px-8 py-3.5 bg-white text-black font-mono text-xs font-black uppercase tracking-wider hover:bg-neutral-200 transition-all text-center"
             >
               CONNECT WALLET
