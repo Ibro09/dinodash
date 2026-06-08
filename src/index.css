@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@theme {
+  --color-secondary-fixed-dim: #c3c7cd;
+  --color-on-secondary: #2c3136;
+  --color-on-primary-fixed: #1a1c1c;
+  --color-on-tertiary: #2a313b;
+  --color-on-surface: #e2e2e2;
+  --color-on-background: #e2e2e2;
+  --color-inverse-primary: #5d5f5f;
+  --color-secondary: #c3c7cd;
+  --color-primary-fixed: #e2e2e2;
+  --color-surface-bright: #393939;
+  --color-primary: #ffffff;
+  --color-surface: #131313;
+  --color-tertiary-container: #dce3f0;
+  --color-on-tertiary-container: #5e6570;
+  --color-surface-container-low: #1b1b1b;
+  --color-on-primary-container: #636565;
+  --color-on-error-container: #ffdad6;
+  --color-secondary-fixed: #dfe3e9;
+  --color-primary-container: #e2e2e2;
+  --color-on-secondary-fixed: #171c20;
+  --color-primary-fixed-dim: #c6c6c7;
+  --color-on-tertiary-fixed-variant: #404752;
+  --color-surface-container: #1f1f1f;
+  --color-tertiary: #ffffff;
+  --color-on-surface-variant: #c4c7c8;
+  --color-outline: #8e9192;
+  --color-surface-dim: #131313;
+  --color-on-primary: #2f3131;
+  --color-inverse-on-surface: #303030;
+  --color-inverse-surface: #e2e2e2;
+  --color-on-primary-fixed-variant: #454747;
+  --color-surface-variant: #353535;
+  --color-background: #131313;
+  --color-error-container: #93000a;
+  --color-tertiary-fixed: #dce3f0;
+  --color-outline-variant: #444748;
+  --color-error: #ffb4ab;
+  --color-surface-container-high: #2a2a2a;
+  --color-tertiary-fixed-dim: #c0c7d3;
+  --color-surface-container-highest: #353535;
+  --color-on-secondary-container: #b4b9bf;
+  --color-surface-container-lowest: #0e0e0e;
+  --color-on-secondary-fixed-variant: #43474c;
+  --color-surface-tint: #c6c6c7;
+  --color-on-tertiary-fixed: #151c25;
+  --color-secondary-container: #454a4f;
+  --color-on-error: #690005;
+
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-display: "Orbitron", sans-serif;
+}
+
+@layer base {
+  body {
+    background-color: #000000;
+    color: #ffffff;
+    font-family: "Space Grotesk", sans-serif;
+    overflow-x: hidden;
+  }
+}
+
+.glow-white {
+  box-shadow: 0px 0px 12px 0px rgba(255, 255, 255, 0.4);
+}
+
+.glow-active {
+  box-shadow: 0px 0px 16px 0px rgba(255, 255, 255, 0.7);
+}
+
+.glow-green {
+  box-shadow: 0px 0px 12px 0px rgba(34, 197, 94, 0.4);
+}
+
+.hud-border {
+  border: 1px solid #4B5563;
+}
+
+.hud-border-active {
+  border: 2px solid #ffffff;
+  box-shadow: 0px 0px 8px #FFFFFF;
+}
+
+.scanline {
+  width: 100%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  position: fixed;
+  z-index: 100;
+  pointer-events: none;
+  animation: scan 10s linear infinite;
+}
+
+@keyframes scan {
+  0% { top: -2%; }
+  100% { top: 100%; }
+}
+
+.grid-bg {
+  background-image: linear-gradient(to right, #111 1px, transparent 1px),
+                    linear-gradient(to bottom, #111 1px, transparent 1px);
+  background-size: 40px 40px;
+}

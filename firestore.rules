@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() >= 32 && id.size() <= 64 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation helper for Operator document
+    function isValidOperator(data) {
+      return data.keys().hasAll(['address', 'name', 'highScore', 'earnings', 'unlockedNodes', 'createdAt', 'updatedAt'])
+        && data.keys().size() == 7
+        && data.address is string
+        && data.address.size() >= 32
+        && data.address.size() <= 64
+        && data.name is string
+        && data.name.size() >= 1
+        && data.name.size() <= 30
+        && (data.highScore is int || data.highScore is float)
+        && (data.earnings is int || data.earnings is float)
+        && data.unlockedNodes is list
+        && data.createdAt is string
+        && data.updatedAt is string;
+    }
+
+    match /operators/{address} {
+      allow get: if isValidId(address);
+      allow list: if true;
+      allow create: if isValidId(address) && isValidOperator(incoming()) && incoming().address == address;
+      allow update: if isValidId(address) && isValidOperator(incoming()) && incoming().address == address && incoming().createdAt == existing().createdAt;
+    }
+  }
+}

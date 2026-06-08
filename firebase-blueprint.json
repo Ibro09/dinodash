@@ -1,0 +1,48 @@
+{
+  "entities": {
+    "operators": {
+      "title": "Operator Log",
+      "description": "Profiles of blockchain simulation operators, their achievements, unlocked features, and game statistics.",
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "description": "Lowercased Ethereum/EVM block address."
+        },
+        "name": {
+          "type": "string",
+          "description": "Hacker pseudonym or name registered by the operator."
+        },
+        "highScore": {
+          "type": "integer",
+          "description": "Highest simulation speed run score recorded."
+        },
+        "earnings": {
+          "type": "number",
+          "description": "Aggregated simulated USD value generated from compiler runs."
+        },
+        "unlockedNodes": {
+          "type": "array",
+          "description": "List of premium node system names paid for and unlocked by the operator."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Chronological login date record."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "High score or state update timestamp."
+        }
+      },
+      "required": ["address", "name", "highScore", "earnings", "unlockedNodes"]
+    }
+  },
+  "firestore": {
+    "/operators/{address}": {
+      "schema": "operators",
+      "description": "Address-keyed collection of crypto-operator accounts."
+    }
+  }
+}
