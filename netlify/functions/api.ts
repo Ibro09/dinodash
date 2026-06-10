@@ -13,6 +13,37 @@ import bs58 from "bs58";
 dotenv.config();
 
 /* =========================
+   CONFIGURATION HELPERS
+========================= */
+
+/**
+ * Get Solana RPC URL based on network environment variable
+ */
+function getSolanaRpcUrl(): string {
+  const network = process.env.VITE_SOLANA_NETWORK || "devnet";
+  
+  if (network === "mainnet") {
+    return (
+      process.env.VITE_SOLANA_MAINNET_RPC ||
+      "https://api.mainnet-beta.solana.com"
+    );
+  } else {
+    return (
+      process.env.VITE_SOLANA_DEVNET_RPC || "https://api.devnet.solana.com"
+    );
+  }
+}
+
+/**
+ * Get treasury wallet address from environment
+ */
+function getTreasuryWallet(): string {
+  return (
+    process.env.VITE_TREASURY_WALLET || "CJppdfe8AghHT7fDjrHQANN7zNT4YgXXrH7rFQet3te5"
+  );
+}
+
+/* =========================
    MONGOOSE SETUP
 ========================= */
 
@@ -297,7 +328,7 @@ export const handler: Handler = async (event) => {
     }
 
     const treasury = Keypair.fromSecretKey(bs58.decode(secret));
-    const connection = new Connection("https://api.devnet.solana.com");
+    const connection = new Connection(getSolanaRpcUrl());
 
     const SOL_PER_USD = 1 / 65;
     const lamports = Math.floor(cleanAmount * SOL_PER_USD * 1e9);

@@ -11,11 +11,36 @@ import {
   Keypair,
   Transaction,
   SystemProgram,
+  SendTransactionError,
 } from "@solana/web3.js";
 import bs58 from "bs58";
 dotenv.config();
 
-// Get directory name safely in ES modules
+/* =========================
+   CONFIGURATION HELPERS
+========================= */
+
+/**
+ * Get Solana RPC URL based on network environment variable
+ */
+function getSolanaRpcUrl(): string {
+  const network = process.env.VITE_SOLANA_NETWORK || "devnet";
+  
+  if (network === "mainnet") {
+    return (
+      process.env.VITE_SOLANA_MAINNET_RPC ||
+      "https://api.mainnet-beta.solana.com"
+    );
+  } else {
+    return (
+      process.env.VITE_SOLANA_DEVNET_RPC || "https://api.devnet.solana.com"
+    );
+  }
+}
+
+/* =========================
+   MONGOOSE & SERVER SETUP
+========================= */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -315,7 +340,7 @@ async function startServer() {
     return res.status(400).json({ error: "Invalid treasury key format" });
   }
 
-  const connection = new Connection("https://api.devnet.solana.com");
+  const connection = new Connection(getSolanaRpcUrl());
 
   // 💱 conversion
   const SOL_PER_USD = 1 / 65;
@@ -395,6 +420,19 @@ async function startServer() {
       });
     }
 
+    // Check treasury account balance before attempting transfer
+    const treasuryBalance = await connection.getBalance(treasuryKeypair.publicKey);
+    console.log(`[WITHDRAW] Treasury balance: ${treasuryBalance} lamports, needed: ${lamports}`);
+    
+    if (treasuryBalance < lamports) {
+      return res.status(400).json({
+        error: "Insufficient balance in treasury account",
+        treasuryBalance,
+        requested: lamports,
+        deficit: lamports - treasuryBalance,
+      });
+    }
+
     const tx = new Transaction().add(
       SystemProgram.transfer({
         fromPubkey: treasuryKeypair.publicKey,
@@ -411,9 +449,53 @@ async function startServer() {
 
     tx.sign(treasuryKeypair);
 
-    const signature = await connection.sendRawTransaction(tx.serialize());
+    let signature: string;
+    try {
+      signature = await connection.sendRawTransaction(tx.serialize());
+      console.log("[WITHDRAW] Sent tx:", signature);
+    } catch (error: any) {
+      if (error instanceof SendTransactionError) {
+        const logs = error.getLogs();
+        const errorMsg = error.transactionMessage || error.message || "";
+        
+        console.error("[WITHDRAW] SendTransactionError details:", {
+          message: error.message,
+          signature: error.signature,
+          transactionMessage: error.transactionMessage,
+          logs: logs,
+          fullError: error,
+        });
 
-    console.log("[WITHDRAW] Sent tx:", signature);
+        // Parse error message and provide user-friendly explanation
+        let userMessage = "Transaction failed";
+        let userDetails = "An error occurred while processing your withdrawal.";
+
+        if (errorMsg.includes("no record of a prior credit")) {
+          userMessage = "Treasury Account Not Ready";
+          userDetails = "The treasury account hasn't been initialized yet. Please ensure SOL has been transferred to the treasury account before attempting withdrawals.";
+        } else if (errorMsg.includes("Insufficient lamports")) {
+          userMessage = "Insufficient Funds";
+          userDetails = "The treasury doesn't have enough SOL to process this withdrawal. Please try again with a smaller amount or contact support.";
+        } else if (errorMsg.includes("Account does not exist")) {
+          userMessage = "Account Not Found";
+          userDetails = "The recipient account or treasury account could not be found. Please verify the account addresses.";
+        } else if (errorMsg.includes("Transaction simulation failed")) {
+          userMessage = "Transaction Validation Failed";
+          userDetails = errorMsg.replace("Transaction simulation failed: ", "");
+        }
+
+        return res.status(400).json({
+          error: userMessage,
+          message: userDetails,
+          signature: error.signature || null,
+        });
+      }
+      console.error("[WITHDRAW] Unexpected error sending transaction:", error);
+      return res.status(500).json({
+        error: "Unexpected error",
+        message: "An unexpected error occurred while processing your withdrawal. Please try again later.",
+      });
+    }
 
     const confirmation = await connection.confirmTransaction(
       {

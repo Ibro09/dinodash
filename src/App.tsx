@@ -441,21 +441,14 @@ export default function App() {
             TERMS
           </button>
           <a
-            href="https://discord.gg/apexprotocol"
+            href="https://x.com/dinoearn"
             target="_blank"
             rel="noreferrer"
             className="text-gray-400 hover:text-white underline underline-offset-4 transition-all"
           >
-            DISCORD
+            X/TWITTER
           </a>
-          <a
-            href="https://t.me/apexprotocol"
-            target="_blank"
-            rel="noreferrer"
-            className="text-gray-400 hover:text-white underline underline-offset-4 transition-all"
-          >
-            TELEGRAM
-          </a>
+         
         </div>
       </footer>
 

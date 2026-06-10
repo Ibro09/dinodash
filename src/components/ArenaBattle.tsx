@@ -25,6 +25,7 @@ import {
   PublicKey,
 } from "@solana/web3.js";
 import { Operator } from "../types";
+import { getSolanaConnection, getTreasuryWallet } from "../config";
 
 interface ArenaBattleProps {
   walletConnected: boolean;
@@ -69,11 +70,9 @@ interface Particle {
   maxLife: number;
 }
 
-// Solana Devnet connection
-const connection = new Connection("https://api.devnet.solana.com");
-
-// Solana wallet and payment constants
-const TREASURY_WALLET = "CJppdfe8AghHT7fDjrHQANN7zNT4YgXXrH7rFQet3te5"; // TODO: Replace with actual treasury wallet on Devnet
+// Get Solana connection and treasury wallet from config
+const connection = getSolanaConnection();
+const TREASURY_WALLET = getTreasuryWallet();
 const UNLOCK_PRICE_SOL = 0.17; // $10 USD equivalent
 
 const OPPONENTS = [
@@ -184,7 +183,7 @@ export default function ArenaBattle({
     const livesData = localStorage.getItem("apex_lives_system");
     const now = Date.now();
     const MAX_LIVES = 3;
-    const REFILL_INTERVAL = 8 * 60 * 60 * 1000; // 8 hours in ms
+    const REFILL_INTERVAL = 8 * 1000; // 8 seconds in ms // 8 hours in ms
     const MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours in ms
 
     let data = livesData
@@ -192,9 +191,21 @@ export default function ArenaBattle({
       : { usedTimes: [], totalUsedToday: 0 };
 
     // Clean up old entries (older than 24 hours)
-    const validUsedTimes = data.usedTimes.filter(
+    let validUsedTimes = data.usedTimes.filter(
       (timestamp: number) => now - timestamp < MAX_AGE,
     );
+
+    // ✅ AUTO-REFILL: Remove entries that are ready to refill
+    validUsedTimes = validUsedTimes.filter((timestamp: number) => {
+      const refillTime = timestamp + REFILL_INTERVAL;
+      return refillTime >= now; // Keep only entries not yet ready to refill
+    });
+
+    // Save cleaned data back to localStorage
+    if (validUsedTimes.length !== data.usedTimes.length) {
+      data.usedTimes = validUsedTimes;
+      localStorage.setItem("apex_lives_system", JSON.stringify(data));
+    }
 
     // Calculate current available lives (never below 0)
     let currentLives = Math.max(0, MAX_LIVES - validUsedTimes.length);
@@ -204,9 +215,6 @@ export default function ArenaBattle({
     if (validUsedTimes.length > 0) {
       const oldestUsedTime = Math.min(...validUsedTimes);
       nextRefill = oldestUsedTime + REFILL_INTERVAL;
-      if (nextRefill < now) {
-        nextRefill = null; // Ready to refill
-      }
     }
 
     return { currentLives, nextRefill, usedTimes: validUsedTimes };

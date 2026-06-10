@@ -16,6 +16,7 @@ import {
   SystemProgram,
   PublicKey,
 } from "@solana/web3.js";
+import { getSolanaConnection, getTreasuryWallet } from "../config";
 
 interface Transaction {
   id: string;
@@ -49,9 +50,9 @@ const DEFAULT_TXS: Transaction[] = [
   },
 ];
 
-// Solana Devnet connection and withdrawal setup
-const connection = new Connection("https://api.devnet.solana.com");
-const TREASURY_WALLET = "CJppdfe8AghHT7fDjrHQANN7zNT4YgXXrH7rFQet3te5"; // TODO: Replace with actual treasury wallet
+// Get Solana connection and treasury wallet from config
+const connection = getSolanaConnection();
+const TREASURY_WALLET = getTreasuryWallet();
 
 export default function WalletDashboard({
   walletConnected,
