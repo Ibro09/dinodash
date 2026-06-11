@@ -183,7 +183,7 @@ export default function ArenaBattle({
     const livesData = localStorage.getItem("apex_lives_system");
     const now = Date.now();
     const MAX_LIVES = 3;
-    const REFILL_INTERVAL = 8 * 1000; // 8 seconds in ms // 8 hours in ms
+    const REFILL_INTERVAL = 8 * 60 * 60 * 1000; // 8 hours in ms
     const MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours in ms
 
     let data = livesData
